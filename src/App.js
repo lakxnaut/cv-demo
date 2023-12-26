@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import saveAs from 'file-saver';
 import JSZip from 'jszip';
+import { PDFDocument } from 'pdf-lib';
 
 
 const App = () => {
@@ -9,198 +10,47 @@ const App = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('https://script.google.com/macros/s/AKfycbxK2Y-VXnQ6g20J7cRQEa4-PPO13tmawodaxD821WJ-Nv8JLatHbFyGQMQnuoBLdgm2/exec');
-        const jsonData = await response.json();
-        setData(jsonData);
+        const response = await fetch('http://34.125.237.179:8002/api/auth/cvResume');
+        if (!response.status) {
+          
+        }
+        const result = await response.json();
+        // console.log(result)
+        console.log(result.data[0].cv_link)
+        setData(result.data);
       } catch (error) {
-        console.error('Error fetching data:', error);
+        // setError(error);
       }
     };
 
-    // Fetch data when the component mounts
     fetchData();
-  }, []);
-
-  const generateDocx = (dataItem) => {
-    console.log(dataItem.profile_pic)
-    if (window.htmlDocx) {
-      // Additional details
-      const languagesSpoken = dataItem.language.split(', ').map(lang => `● ${lang}`).join('\n');
-      const drivingLicence = dataItem.driver_licence ? `● ${dataItem.driver_licence}` : 'N/A';
-      const mobility = dataItem.mobility ? dataItem.mobility.split(', ').map(mob => `● ${mob}`).join('\n') : 'N/A';
-      const profession = dataItem.position ? `● ${dataItem.position}` : 'N/A';
-      const occupationsPracticed = dataItem.kind_of_activities ? dataItem.kind_of_activities.split(', ').map(act => `● ${act}`).join('\n') : 'N/A';
-      const experiencesAndSkills = dataItem.type_of_good ? dataItem.type_of_good.split(', ').map(skill => `● ${skill}`).join('\n') : 'N/A';
-      const additionalInformation = dataItem.additional_information ? `● ${dataItem.additional_information}` : 'N/A';
-
-      // Template for generating DOCX
-      const content = `
-      <head>
-      <style type="text/css">
-    body {
-        display: flex;
-        margin:1000px
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-    }
-</style>
-      </head>
-      <div style="padding: 200px;">
-        <div class="title">
-        <div>
-
-        <img
-            alt="User's Image"
-            width="100"
-            height="100"
-            src=${dataItem.profile_pic}
-            style={{ position: 'absolute', top: 0, right: 0 }}
-          />
-        
-        </div>
-        <div>
-
-        <h1>${dataItem.name}</h1>
-          <p>Gender: ${dataItem.gen}</p>
-          <p>Nationality: ${dataItem.nationality}</p>
-          <p>Date of Birth: ${dataItem.birthday}</p>
-          <p>Phone Number: ${dataItem.tel_no}</p>
-          <p>E-Mail: ${dataItem.email}</p>
-        
-        </div>
-
-        
-        
-        
-        </div>
-
-      
-
-          <h2>LANGUAGES SPOKEN</h2>
-          ${languagesSpoken}
-
-          <h2>DRIVING LICENCE</h2>
-          ${drivingLicence}
-
-          <h2>MOBILITY</h2>
-          ${mobility}
-
-          <h2>PROFESSION</h2>
-          ${profession}
-
-          <h2>OCCUPATIONS PRACTISED</h2>
-          ${occupationsPracticed}
-
-          <h2>EXPERIENCES AND SKILLS</h2>
-          ${experiencesAndSkills}
-
-          <h2>ADDITIONAL INFORMATION</h2>
-          ${additionalInformation}
-
-          
-        </div>
-      `;
-
-      const converted = window.htmlDocx.asBlob(content);
-      saveAs(converted, `${dataItem.name} CV.docx`);
-    } else {
-      console.error('htmlDocx is not defined. Make sure the html-docx.js script is loaded.');
-    }
-  };
-
-  const downloadAllCV = async()=>{
-
-    const zip = new JSZip();
+  }, []); 
 
 
-    for(let dataItem of data){
+  const convertBuffer = (bufferData) =>{
+    const generatedPdfBytes = createPDF(bufferData.data);
+        const data = generatedPdfBytes;
 
-        if (window.htmlDocx) {
-          // Additional details
-          const languagesSpoken = dataItem.language.split(', ').map(lang => `● ${lang}`).join('\n');
-          const drivingLicence = dataItem.driver_licence ? `● ${dataItem.driver_licence}` : 'N/A';
-          const mobility = dataItem.mobility ? dataItem.mobility.split(', ').map(mob => `● ${mob}`).join('\n') : 'N/A';
-          const profession = dataItem.position ? `● ${dataItem.position}` : 'N/A';
-          const occupationsPracticed = dataItem.kind_of_activities ? dataItem.kind_of_activities.split(', ').map(act => `● ${act}`).join('\n') : 'N/A';
-          const experiencesAndSkills = dataItem.type_of_good ? dataItem.type_of_good.split(', ').map(skill => `● ${skill}`).join('\n') : 'N/A';
-          const additionalInformation = dataItem.additional_information ? `● ${dataItem.additional_information}` : 'N/A';
-          // Template for generating DOCX
-          const content = `
-          <head>
-          <style type="text/css">
-        body {
-            display: flex;
-            margin:1000px
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
+        try {
+          const buffer = Buffer.from(data);
+          const pdfDoc = await PDFDocument.create();
+          const page = pdfDoc.addPage();
+          const { width, height } = page.getSize();
+    
+          const font = await pdfDoc.embedFont(PDFDocument.Font.Helvetica);
+          const text = 'Hello, PDF!';
+          page.drawText(text, { x: 50, y: height - 200, font });
+    
+          return pdfDoc.save();
+        } catch (error) {
+          throw new Error('Error creating PDF:', error);
         }
-    </style>
-          </head>
-          <div style="padding: 200px;">
-            <div class="title">
-            <div>
-    
-            <img
-                alt="User's Image"
-                width="100"
-                height="100"
-                src=${dataItem.profile_pic}
-              />
-            
-            </div>
-            <div>
-    
-            <h1>${dataItem.name}</h1>
-              <p>Gender: ${dataItem.gen}</p>
-              <p>Nationality: ${dataItem.nationality}</p>
-              <p>Date of Birth: ${dataItem.birthday}</p>
-              <p>Phone Number: ${dataItem.tel_no}</p>
-              <p>E-Mail: ${dataItem.email}</p>
-            
-            </div>
-            </div>
-              <h2>LANGUAGES SPOKEN</h2>
-              ${languagesSpoken}
-    
-              <h2>DRIVING LICENCE</h2>
-              ${drivingLicence}
-    
-              <h2>MOBILITY</h2>
-              ${mobility}
-    
-              <h2>PROFESSION</h2>
-              ${profession}
-    
-              <h2>OCCUPATIONS PRACTISED</h2>
-              ${occupationsPracticed}
-    
-              <h2>EXPERIENCES AND SKILLS</h2>
-              ${experiencesAndSkills}
-    
-              <h2>ADDITIONAL INFORMATION</h2>
-              ${additionalInformation}
-              
-            </div>
-          `;
+      };
 
-        const converted = window.htmlDocx.asBlob(content);
-        zip.file(`${dataItem.name} CV.docx`, converted);
-          // saveAs(converted, `GeneratedDocument_${dataItem.name}.docx`);
-        } 
-
-    }
-
-    const zipBlob = await zip.generateAsync({ type: 'blob' });
-
-    // Download the zip file
-    saveAs(zipBlob, 'GeneratedDocuments.zip');
 
   }
 
+ 
   return (
     <div className='content-page rtl-page'>
         <div className='container-fluid'>
@@ -212,9 +62,7 @@ const App = () => {
                         <div className='header-title'>
                             <h4 className='card-title'>View all CV</h4>
                         </div>
-                        <div className='header-title'>
-                            <button onClick={downloadAllCV} className='card-title'>Download All CV</button>
-                        </div>
+ 
                     </div>
                     <div className='card-body'>
 
@@ -260,7 +108,7 @@ const App = () => {
                                                                 alignItems:'center !important'
                                                             }}
 
-                                                            onClick={() => generateDocx(name)}
+                                                            onClick={() => convertBuffer(name.cv_link)}
                                                          
                                                         >
                                                             Download CV
