@@ -3,56 +3,131 @@ import saveAs from "file-saver";
 import JSZip from "jszip";
 import { PDFDocument } from "pdf-lib";
 import html2pdf from "html2pdf.js";
+import bottomImg from "./bottom.png";
+import defaultImg from "./default.png";
 
 const App = () => {
   const [data, setData] = useState([]);
+  const [imageBase64, setImageBase64] = useState(null);
+  const [selectedData, setSelectedData] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [EditId, setEditId] = useState();
+
+  const fetchData = async () => {
+    try {
+      const response = await fetch(
+        "http://34.125.237.179:8002/api/auth/cvResume"
+      );
+      if (!response.status) {
+      }
+      const result = await response.json();
+      // console.log(result)
+      // console.log(result.data[0].cv_link);
+      setData(result.data);
+    } catch (error) {
+      // setError(error);
+    }
+    setIsLoading(false)
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch(
-          "https://34.125.237.179:8002/api/auth/cvResume"
-        );
-        if (!response.status) {
-        }
-        const result = await response.json();
-        // console.log(result)
-        console.log(result.data[0].cv_link);
-        setData(result.data);
-      } catch (error) {
-        // setError(error);
-      }
-    };
+    
 
     fetchData();
   }, []);
 
-  const EditView = () => {};
-  const editData = [
-    { name: "name" },
-    { name: "gen" },
-    { name: "nationality" },
-    { name: "tel_no" },
-    { name: "email" },
-    { name: "birthday" },
-    { name: "disponibility" },
-    { name: "language" },
-    { name: "driver_licence" },
-    { name: "mobility" },
-    { name: "start_of_work" },
-    { name: "work_in_warehouse" },
-    { name: "kind_of_activities" },
-    { name: "duration_of_work" },
-    { name: "type_of_good" },
-    { name: "picking_sys_licence" },
-    { name: "shoe_size" },
-    { name: "profile_pic" },
-    { name: "position" },
-    { name: "beruf" },
-    { name: "skill" },
-  ];
+  const handleEditClick = (data) => {
+    // console.log(data)
+    setEditId(data._id)
+  const finalData = {
+    name:data.name,
+    gen:data.gen,
+    nationality:data.nationality,
+    tel_no:data.tel_no,
+    email:data.email,
+    birthday:data.birthday,
+    disponibility:data.disponibility,
+    language:data.language,
+    driver_licence:data.driver_licence,
+    mobility:data.mobility,
+    start_of_work:data.start_of_work,
+    work_in_warehouse:data.work_in_warehouse,
+    kind_of_activities:data.kind_of_activities,
+    duration_of_work:data.duration_of_work,
+    type_of_good:data.type_of_good,
+    picking_sys_licence:data.picking_sys_licence,
+    shoe_size:data.shoe_size,
+    profile_pic:data.profile_pic,
+    position:data.position,
+    beruf:data.beruf,
+    skill:data.skill,
+  }
 
-  const callHtml = (data) => {
+    setSelectedData(finalData);
+  };
+
+  const editDataChange = (data,key) => {
+    setSelectedData((prevState) => ({ ...prevState, [key]: data }));
+  };
+
+  const EditSubmit = () =>{
+
+    setData([])
+    setIsLoading(true)
+
+    const data = {
+      "_id":EditId,
+      "data":{
+          ...selectedData
+      }
+  
+  }
+
+    fetch("http://34.125.237.179:8002/api/auth/editData", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // You can add other headers as needed
+      },
+      body: JSON.stringify(data),
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        fetchData()
+
+      })
+      .catch(error => {
+        // Handle errors here
+        console.error('Error:', error);
+      });
+  }
+ 
+
+  const fetchAndConvertImage = async (imageUrl) => {
+    console.log(imageUrl);
+    try {
+      const response = await fetch(
+        `http://34.125.237.179:8002/api/auth/proxyImg?img=${imageUrl}`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setImageBase64(data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching or converting image:", error.message);
+    }
+  };
+
+  const callHtml = async (data) => {
+    await fetchAndConvertImage(data.profile_pic);
+
+    const profileimg = `data:image/jpg;base64,${imageBase64}`;
+
     const htmlTemplate = `
   <!DOCTYPE html>
   <html lang="en">
@@ -106,40 +181,40 @@ const App = () => {
               <p>Phone:${data.tel_no}</p>
               <p>Email:${data.email}</p>
               <hr>
-              <h2>Language Spoken</h2>
+              <h4>Language Spoken</h4>
               <ul>
                   <li>Native Language - German</li>
                   <li>English Skills</li>
               </ul>
-              <h2>Driving License</h2>
+              <h4>Driving License</h4>
               <ul>
                   <li>ABC</li>
               </ul>
-        <h2>Mobility</h2>
+        <h4>Mobility</h4>
               <ul>
                   <li>Availability by Phone:</li>
                   <li>Start of Work:</li>
                   <li>Own Vehicle:</li>
               </ul>
-        <h2>PROFESSION</h2>
+        <h4>PROFESSION</h4>
               <ul>
                   <li>xxxx</li>
               </ul>
-        <h2>OCCUPATIONS PRACTISED</h2>
+        <h4>OCCUPATIONS PRACTISED</h4>
               <ul>
                   <li>xxxx</li>
               </ul></h2>
               <ul>
                   <li>xxxx</li>
               </ul>
-        <h2>EXPERIENCES AND SKILLS</h2>
+        <h4>EXPERIENCES AND SKILLS</h4>
               <ul>
                   <li>xxxx</li>
               </ul></h2>
               <ul>
                   <li>xxxx</li>
               </ul>
-        <h2>ADDITIONAL INFORMATION</h2>
+        <h4>ADDITIONAL INFORMATION</h4>
               <ul>
                   <li>xxxx</li>
               </ul></h2>
@@ -150,12 +225,12 @@ const App = () => {
           <div id="right-column">
               <!-- Image at the top right -->
               <div id="top-right">
-                  <img src="${data.profile_pic}" alt="Your Image" style="width: 50%;">
+                  <img src="${profileimg}" alt="Your Image" style="width: 50%;">
 
               </div>
               <!-- Logo at the bottom right -->
               <div id="bottom-right">
-                  <img src="https://i.ibb.co/W34pCBQ/image003.png" alt="Your Logo" style="width: 50%;">
+                  <img src=${bottomImg} alt="Your Logo" style="width: 50%;">
               </div>
           </div>
       </div>
@@ -163,15 +238,16 @@ const App = () => {
   </html>
   `;
     return htmlTemplate;
+    // });
   };
 
-  const generatePDF = (data) => {
-    const htmlContent = callHtml(data);
+  const generatePDF = async (data) => {
+    const htmlContent = await callHtml(data);
 
     // Convert HTML to PDF
     html2pdf(htmlContent, {
       margin: 10,
-      filename: "your_cv.pdf",
+      filename: `${data.name}`,
       image: { type: "jpeg", quality: 0.98 },
       html2canvas: { scale: 2 },
       jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
@@ -211,7 +287,7 @@ const App = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {data.slice(1).map((name, ind) => {
+                      {!isLoading && data.length>0 && data && data.slice(1).map((name, ind) => {
                         return (
                           <tr key={ind}>
                             <td>{++ind}</td>
@@ -246,7 +322,7 @@ const App = () => {
                                 <button
                                   title="Edit"
                                   type="button"
-                                  onClick={() => EditView()}
+                                  onClick={() => handleEditClick(name)}
                                   style={{
                                     backgroundColor: "green",
                                     color: "white",
@@ -298,22 +374,276 @@ const App = () => {
                 </div>
                 <div className="modal-body">
                   <form>
-                    {editData &&
-                      editData.length > 0 &&
-                      editData.map((data, i) => {
-                        return (
-                          <div className="form-group" key={data.name}>
-                            <label htmlFor="name">{data.name}</label>
+                    
+                          <div className="form-group" >
+                            <label htmlFor="name">name</label>
                             <input
                               type="text"
                               className="form-control"
-                              value={data.name} // Use the corresponding property from the data object
-                              // onChange={EditSeriesChange} // Uncomment this line if you have an onChange handler
-                              placeholder={data.name}
+                              value={selectedData?.name}
+                              onChange={(e)=>editDataChange(e.target.value,'name')}
+                              placeholder=''
+                              
                             />
                           </div>
-                        );
-                      })}
+
+
+                          <div className="form-group" >
+                            <label htmlFor="name">Gender</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={selectedData?.gen}
+                              onChange={(e)=>editDataChange(e.target.value,'gen')}
+                              placeholder=''
+                              
+                            />
+                          </div>
+
+                          <div className="form-group" >
+                            <label htmlFor="name">nationality</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={selectedData?.nationality}
+                              onChange={(e)=>editDataChange(e.target.value,'nationality')}
+                              placeholder=''
+                              
+                            />
+                          </div>
+
+
+                          <div className="form-group" >
+                            <label htmlFor="name">tel_no</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={selectedData?.tel_no}
+                              onChange={(e)=>editDataChange(e.target.value,'tel_no')}
+                              placeholder=''
+                              
+                            />
+                          </div>
+
+
+                          <div className="form-group" >
+                            <label htmlFor="name">email</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={selectedData?.email}
+                              onChange={(e)=>editDataChange(e.target.value,'email')}
+                              placeholder=''
+                              
+                            />
+                          </div>
+
+
+                          <div className="form-group" >
+                            <label htmlFor="name">birthday</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={selectedData?.birthday}
+                              onChange={(e)=>editDataChange(e.target.value,'birthday')}
+                              placeholder=''
+                              
+                            />
+                          </div>
+
+
+                          <div className="form-group" >
+                            <label htmlFor="name">disponibility</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={selectedData?.disponibility}
+                              onChange={(e)=>editDataChange(e.target.value,'disponibility')}
+                              placeholder=''
+                              
+                            />
+                          </div>
+
+                          <div className="form-group" >
+                            <label htmlFor="name">language</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={selectedData?.language}
+                              onChange={(e)=>editDataChange(e.target.value,'language')}
+                              placeholder=''
+                              
+                            />
+                          </div>
+
+
+                          <div className="form-group" >
+                            <label htmlFor="name">driver_licence</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={selectedData?.driver_licence}
+                              onChange={(e)=>editDataChange(e.target.value,'driver_licence')}
+                              placeholder=''
+                              
+                            />
+                          </div>
+
+
+                          <div className="form-group" >
+                            <label htmlFor="name">mobility</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={selectedData?.mobility}
+                              onChange={(e)=>editDataChange(e.target.value,'mobility')}
+                              placeholder=''
+                              
+                            />
+                          </div>
+
+
+                          <div className="form-group" >
+                            <label htmlFor="name">start_of_work</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={selectedData?.start_of_work}
+                              onChange={(e)=>editDataChange(e.target.value,'start_of_work')}
+                              placeholder=''
+                              
+                            />
+                          </div>
+
+                          <div className="form-group" >
+                            <label htmlFor="name">work_in_warehouse</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={selectedData?.work_in_warehouse}
+                              onChange={(e)=>editDataChange(e.target.value,'work_in_warehouse')}
+                              placeholder=''
+                              
+                            />
+                          </div>
+
+
+                          <div className="form-group" >
+                            <label htmlFor="name">kind_of_activities</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={selectedData?.kind_of_activities}
+                              onChange={(e)=>editDataChange(e.target.value,'kind_of_activities')}
+                              placeholder=''
+                              
+                            />
+                          </div>
+
+
+                          <div className="form-group" >
+                            <label htmlFor="name">duration_of_work</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={selectedData?.duration_of_work}
+                              onChange={(e)=>editDataChange(e.target.value,'duration_of_work')}
+                              placeholder=''
+                              
+                            />
+                          </div>
+
+
+                          <div className="form-group" >
+                            <label htmlFor="name">type_of_good</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={selectedData?.type_of_good}
+                              onChange={(e)=>editDataChange(e.target.value,'type_of_good')}
+                              placeholder=''
+                              
+                            />
+                          </div>
+
+
+                          <div className="form-group" >
+                            <label htmlFor="name">picking_sys_licence</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={selectedData?.picking_sys_licence}
+                              onChange={(e)=>editDataChange(e.target.value,'picking_sys_licence')}
+                              placeholder=''
+                              
+                            />
+                          </div>
+
+
+                          <div className="form-group" >
+                            <label htmlFor="name">shoe_size</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={selectedData?.shoe_size}
+                              onChange={(e)=>editDataChange(e.target.value,'shoe_size')}
+                              placeholder=''
+                              
+                            />
+                          </div>
+
+
+                          <div className="form-group" >
+                            <label htmlFor="name">profile_pic</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={selectedData?.profile_pic}
+                              onChange={(e)=>editDataChange(e.target.value,'profile_pic')}
+                              placeholder=''
+                              
+                            />
+                          </div>
+
+
+                          <div className="form-group" >
+                            <label htmlFor="name">position</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={selectedData?.position}
+                              onChange={(e)=>editDataChange(e.target.value,'position')}
+                              placeholder=''
+                              
+                            />
+                          </div>
+
+
+                          <div className="form-group" >
+                            <label htmlFor="name">beruf</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={selectedData?.beruf}
+                              onChange={(e)=>editDataChange(e.target.value,'beruf')}
+                              placeholder=''
+                              
+                            />
+                          </div>
+
+
+                          <div className="form-group" >
+                            <label htmlFor="name">skill</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={selectedData?.skill}
+                              onChange={(e)=>editDataChange(e.target.value,'skill')}
+                              placeholder=''
+                              
+                            />
+                          </div>
+                      
                   </form>
                 </div>
                 <div className="modal-footer">
@@ -327,7 +657,8 @@ const App = () => {
                   <button
                     type="button"
                     className="btn btn-primary"
-                    // onClick={EditSubmit}
+                    onClick={EditSubmit}
+                    data-dismiss="modal"
                   >
                     Save changes
                   </button>
